@@ -12,6 +12,14 @@ class tello(object):
         self.capture = None
         self.captureStatus = False
 
+        #Odometry poitions;
+        self.startX = 0.00
+        self.startY = 0.00
+        self.startZ = 0.00
+        self.currentX = 0.00
+        self.currentY = 0.00
+        self.currentZ = 0.00
+
         #Drone flight variables all variables found in DJI Tello SDK, all incoming messages from the state port
         self.pitch = 0.0
         self.roll = 0.0
@@ -36,8 +44,9 @@ class tello(object):
         self.command_Port = 8889
         self.state_Port = 8890
         self.video_Port = 11111
-        self.connected = False;
         self.drone_speed = 100
+        self.connected = False
+        self.streaming = False
 
         #sockets for communicating to the drone
         self.command_Socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -57,12 +66,13 @@ class tello(object):
 
 
         #new threads for listener processes
-        self.stateListener = threading.Thread(target = self.startStateListener, args = ())
-        self.videoListener = threading.Thread(target = self.startVideoFeed, args = ())
+        self.stateListener = threading.Thread(target = self.startStateListener)
+        self.videoListener = threading.Thread(target = self.startVideoFeed)
 
         #make them daemons to run in the background
+        #video feed seems to brake when run as daemon for now
         self.stateListener.daemon = True
-        self.videoListener.daemon = True
+        #self.videoListener.daemon = True
 
 
     def startProcesses(self):
@@ -83,13 +93,15 @@ class tello(object):
         except Exception:
             print("Error with connection to drone")
             
-    def startStateListener(self, print = 0):
+    def startStateListener(self):
         while self.connected:
             #Recieve data from drone with a 1024 buffer
             state = self.state_Socket.recv(1024)
             decoded = state.decode(encoding = "utf-8")
+
             #regex search to find all the data in the output string
             output = re.findall(r"[-+]?\d*\.\d+|\d+", decoded)
+
             #Assigning variables into for drone
             self.pitch = float(output[0])
             self.roll = float(output[1])
@@ -108,34 +120,57 @@ class tello(object):
             self.yAcceleration = float(output[14])
             self.zAcceleration = float(output[15])
 
-            if(print == 1):
-                self.printState()
-            
-            
 
+            
 
     def startVideoFeed(self):
-        width = 1280
-        height = 720
+        if(self.streaming == True):
+            width = 640
+            height = 480
 
-        self.capture = cv2.VideoCapture('udp://@0.0.0.0:11111')
+            self.capture = cv2.VideoCapture('udp://@0.0.0.0:11111')
 
-        self.captureStatus = self.capture.isOpened()
+            if self.capture is None:
+                self.capture = cv2.VideoCapture.open('udp://@0.0.0.0:11111')
 
+            self.captureStatus = self.capture.isOpened()
 
-        while self.connected & (self.captureStatus==True) :
-            recieved, frame = self.capture.read()
+            while self.connected & (self.captureStatus==True) :
 
-            resized = cv2.resize(frame,(width,height))
+                recieved, frame = self.capture.read()
 
-            bwVideo = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+                resized = cv2.resize(frame,(width,height))
 
-            cv2.imshow("Video Feed", bwVideo)
-            if(cv2.waitKey(1) & 0xFF == ord('q')):
-                self.land()
-                break
+                bwFrame = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
+                #HARRIS CORNER DETECTION
+                #gray = np.float32(bwFrame)
+                #dst = cv2.cornerHarris(gray,4,9,0.08)
+                #dst = cv2.dilate(dst,None)
+                #resized[dst>dst.max()/500]=[255,0,0]
 
+                #LOOK into SIFT AND SURF
+
+                #sift = cv2.xfeatures2d.SIFT_create()
+                #surf = cv2.xfeatures2d.SURF_create() 
+
+                output = cv2.ORB_create()
+
+                #keypoints, descriptors = surf.detectAndCompute(resizied, None)
+
+                keypoints, descriptors = output.detectAndCompute(bwFrame, None)
+                bwFrame = cv2.drawKeypoints(resized,keypoints, None)
+
+                cv2.imshow("Video Feed",bwFrame)
+
+                if(cv2.waitKey(1) & 0xFF == ord('q')):
+                    self.land()
+                    break
+
+    def odometry(self):
+        print("Calculating Odometry")
+        
+        #P1X = P0X + (AX + T)
 
     def startConnection(self):
         print("Connected to SDK")
@@ -197,8 +232,9 @@ class tello(object):
 
 #turn on video feed from the drone
     def streamOn(self):
-        print('open streaming')
+        print("Stream on?")
         self.sendCommand("streamon")
+        self.streaming = True
 
     def streamOff(self):
         self.sendCommand("streamoff")
@@ -209,20 +245,21 @@ class tello(object):
 
 
 
-    def printState(self):
-        print("\n pitch" + str(self.pitch)+
-            "\n roll" + str(self.roll) +
-            "\n yaw" + str(self.yaw) +
-            "\n xSpeed" + str(self.xSpeed) +
-            "\n ySpeed" + str(self.ySpeed) +
-            "\n zSpeed" + str(self.zSpeed) +
-            "\n lTemp" + str(self.lTemp) +
-            "\n hTep" + str(self.hTemp) +
-            "\n dTOF" + str(self.dTOF) +
-            "\n height" + str(self.height) +
-            "\n battery" + str(self.battery) +
-            "\n barometer" + str(self.barometer) +
-            "\n uptime" + str(self.uptime) +
-            "\n xAcceleration" + str(self.xAcceleration) +
-            "\n yAcceleration" + str(self.yAcceleration) +
-            "\n zAcceleration" + str(self.zAcceleration), end = '\r')
+    def printStates(self):
+        print("pitch" + str(self.pitch) +
+            "  roll" + str(self.roll) +
+            "  yaw" + str(self.yaw) +
+            "  xSpeed" + str(self.xSpeed) +
+            "  ySpeed" + str(self.ySpeed) +
+            "  zSpeed" + str(self.zSpeed) +
+            "  lTemp" + str(self.lTemp) +
+            "  hTep" + str(self.hTemp) +
+            "  dTOF" + str(self.dTOF) +
+            "  height" + str(self.height) +
+            "  battery" + str(self.battery) +
+            "  barometer" + str(self.barometer) +
+            "  uptime" + str(self.uptime) +
+            "  xAcceleration" + str(self.xAcceleration) +
+            "  yAcceleration" + str(self.yAcceleration) +
+            "  zAcceleration" + str(self.zAcceleration), end = '\r')
+
