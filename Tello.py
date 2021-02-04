@@ -1,6 +1,6 @@
 import socket
-import cv2
 import numpy as np
+import cv2
 import threading
 import re
 
@@ -74,7 +74,6 @@ class tello(object):
         self.stateListener.daemon = True
         #self.videoListener.daemon = True
 
-
     def startProcesses(self):
         self.stateListener.start()
         self.videoListener.start()
@@ -119,8 +118,6 @@ class tello(object):
             self.xAcceleration = float(output[13])
             self.yAcceleration = float(output[14])
             self.zAcceleration = float(output[15])
-
-
             
 
     def startVideoFeed(self):
@@ -135,6 +132,8 @@ class tello(object):
 
             self.captureStatus = self.capture.isOpened()
 
+            output = cv2.ORB_create()
+
             while self.connected & (self.captureStatus==True) :
 
                 recieved, frame = self.capture.read()
@@ -142,21 +141,6 @@ class tello(object):
                 resized = cv2.resize(frame,(width,height))
 
                 bwFrame = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-
-                #HARRIS CORNER DETECTION
-                #gray = np.float32(bwFrame)
-                #dst = cv2.cornerHarris(gray,4,9,0.08)
-                #dst = cv2.dilate(dst,None)
-                #resized[dst>dst.max()/500]=[255,0,0]
-
-                #LOOK into SIFT AND SURF
-
-                #sift = cv2.xfeatures2d.SIFT_create()
-                #surf = cv2.xfeatures2d.SURF_create() 
-
-                output = cv2.ORB_create()
-
-                #keypoints, descriptors = surf.detectAndCompute(resizied, None)
 
                 keypoints, descriptors = output.detectAndCompute(bwFrame, None)
                 bwFrame = cv2.drawKeypoints(resized,keypoints, None)
@@ -242,8 +226,6 @@ class tello(object):
 #turn of motors incase of emergency
     def emergency(self):
         self.sendCommand("emergency")
-
-
 
     def printStates(self):
         print("pitch" + str(self.pitch) +

@@ -79,8 +79,8 @@ def findCameras():
     print("Number of Cameras:" + str(num))
 
 #LEARNING THIS
-def SLAM():
-    print("LEARNING SLAM")
+def HarrisCorner():
+    print("Harris Corner")
 
     width = 1280
     height = 720
@@ -121,26 +121,45 @@ def SLAM():
 
 
 
+def orbSLAM():
+        print("ORB SLAM")
+        capture = cv2.VideoCapture(0)
+
+        captureStatus = capture.isOpened()
+        orb = cv2.ORB_create(nfeatures = 100000)
+
+        print(captureStatus)
+        while (captureStatus==True) :
+                
+            works, frame = capture.read()
+            resized  = frame
+            gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+
+            
+            keypoints_orb, descriptors = orb.detectAndCompute(gray, None)
+            bwFrame_orb = cv2.drawKeypoints(gray, keypoints_orb, None, color = (0,0,255), flags = 0)
+            cv2.imshow("orb", bwFrame_orb)
+
+            if(cv2.waitKey(1) & 0xFF == ord('q')):
+                break
 
 
-        #ORB SLAM
-        #orb = cv2.ORB_create()
-        #keypoints_orb, descriptors = orb.detectAndCompute(resized, None)
-        #bwFrame_orb = cv2.drawKeypoints(resized, keypoints_orb, None, color = (0,0,255), flags = 0)
-        #cv2.imshow("orb", bwFrame_orb)
 
-        #SIFT AND SURF IS NO LONGER SUPPORTED since OPENCV 2.18  Current Version: 4.4.0
-        #SIFT
-        #sift = cv2.xfeatures2d.SIFT_create()
-        #keypoints_sift, descriptors = sift.detectAndCompute(bwFrame, None)
-        #bwFrame_sift = cv2.drawKeypoints(bwFrame, keypoints_sift, None)
-        #cv2.imshow("sift", bwFrame_sift)
-        #SURF
-        #surf = cv2.xfeatures2d.SURF_create()
-        #keypoints_surf, descriptors = sift.detectAndCompute(bwFrame, None)
-        #bwFrame_surf = cv2.drawKeypoints(bwFrame, keypoints_surf, None)
-        #cv2.imshow("surf", bwFrame_surf)
+def siftSLAM():
+    print("SIFT SLAM")
+    capture = cv2.VideoCapture(0)
+    captureStatus = capture.isOpened()
 
+    while (captureStatus==True) :
+                
+        works, frame = capture.read()
+        gray= cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+
+        sift = cv2.SIFT()
+        kp = sift.detect(gray,None)
+
+        img=cv2.drawKeypoints(gray,kp)
+        cv2.imshow("SIFT", img)
         if(cv2.waitKey(1) & 0xFF == ord('q')):
             break
 
@@ -153,13 +172,10 @@ def odometryTesting():
     while(True):
         drone.printStates()
 
+
+
 if __name__ == "__main__":
-    print("Testing")
-    print(cv2.__version__)
-    #findCameras()
-    #cameraTesting()
-    #droneTesting()
-    SLAM()
+    droneTesting()
 
     
     
