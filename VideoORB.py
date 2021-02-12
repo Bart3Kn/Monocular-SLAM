@@ -1,10 +1,13 @@
 import cv2
 import numpy as np
+import glob
 from matplotlib import pyplot as plt
 
 
 """
-ALL COLOUR IN THE CODE IS IN THE BGR FORMAT AS IT WAS IMPLEMENTED BY OPENCV IN SUCH A WAY TO SUPPORT BETTER CAMERA VIDEO
+ALL COLOUR IN THE CODE IS IN THE BGR FORMAT AS IT WAS IMPLEMENTED BY OPENCV IN SUCH A WAY TO SUPPORT BETTER CAMERA/VIDEO INPUTS
+
+Work on Camera Matrix for calibration, displaying matches on screen
 """
 
 def featureFinder(frame, orb):
@@ -26,21 +29,29 @@ def featureMatcher(f1D, f2D):
     matches = bfMatcher.knnMatch(f1D, f2D, k=2)
 
     goodMatches = []
+
+    #FROM OPENCV BRUTE FORCE MATCHER
     for m,n in matches:
         if m.distance < 0.75*n.distance:
             goodMatches.append([m])
 
     print("Good Features found: ", len(goodMatches))
+
     return goodMatches
+
+
+def cameraMatrix():
+    print("Good luck with this")
 
 def manualTracking():
 
-
+    #Storage containers for feature detection
     f1Descriptor = None
     f2Descriptor = None
     f1Keypoints = None
     f2Keypoints = None
 
+    oldFrame = None
 
     # Resize Parameters
     scale = 0.5
@@ -71,6 +82,7 @@ def manualTracking():
             if(f1Keypoints == None):
                 f1Keypoints, f1Descriptor = featureFinder(gray, orb)
                 print("Frame 1 done")
+                oldFrame = gray
 
             else:
                 f2Keypoints, f2Descriptor = featureFinder(gray, orb)
@@ -79,28 +91,34 @@ def manualTracking():
 
                 matches = featureMatcher(f1Descriptor, f2Descriptor)
 
+                #for m in matches[:5]: 
+                    #print("Distance: ", m[0].distance, "  QueryIdx: ", m[0].queryIdx, "  TrainIdx: ", m[0].trainIdx)
+
                 #Red is old frame
                 cv2.drawKeypoints(gray, f1Keypoints, resized, color = (0,0,255))
                 #Blue is new frame
                 cv2.drawKeypoints(resized, f2Keypoints, resized, color = (255,0,0))
+                #Display on image
+                cv2.imshow("ORB_1", resized)
+
+                output = cv2.drawMatchesKnn(oldFrame,f1Keypoints, gray, f2Keypoints, matches[:20], None, flags = 2)
+                cv2.imshow("ORB_2", output)
 
 
-
-                cv2.imshow("ORB", resized)
-            
                 f1Keypoints = f2Keypoints
                 f1Descriptor = f2Descriptor
-            
-
+                oldFrame = gray
 
                 if cv2.waitKey(25) & 0xFF == ord('q'): 
                         break
+
         else:
-            print("No frame recieved,  breaking code")
+            print("End of video file")
             break
+
+
     video.release() 
     cv2.destroyAllWindows()
-
 
 if __name__ == "__main__":
     #main()
