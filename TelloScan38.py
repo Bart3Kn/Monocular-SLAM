@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 from  matplotlib import pyplot as plt
 
-
 #VIDEO FEED
 def droneTesting():
 
@@ -41,29 +40,6 @@ def cameraTesting():
 
         if(cv2.waitKey(1) & 0xFF == ord('q')):
             break
-
-def depthTesting():
-    #Test images
-    imgL = cv2.imread(r'C:\Users\barte\Desktop\Photo Left.jpg',0)
-    imgR = cv2.imread(r'C:\Users\barte\Desktop\Photo Right.jpg',0)
-
-    #Resoltion of image
-    height, width = imgL.shape
-
-    #Depth Map from images
-    stereo = cv2.StereoBM_create(16,15)
-    disparity = stereo.compute(imgL,imgR)
-
-    plt.imshow(disparity, 'gray')
-    plt.show()
-
-    #Resizing Images
-    imgL = cv2.resize(imgL,(int(width/4),int(height/4)))
-    imgR = cv2.resize(imgR,(int(width/4),int(height/4)))
-
-    cv2.imshow("LEFT", imgL)
-    cv2.imshow("RIGHT", imgR)
-    cv2.waitKey(0)
 
 def findCameras():
     num = 0
@@ -119,51 +95,6 @@ def HarrisCorner():
 
         cv2.imshow("Harris", frame)
 
-
-
-def orbSLAM():
-        print("ORB SLAM")
-        capture = cv2.VideoCapture(0)
-
-        captureStatus = capture.isOpened()
-        orb = cv2.ORB_create(nfeatures = 100000)
-
-        print(captureStatus)
-        while (captureStatus==True) :
-                
-            works, frame = capture.read()
-            resized  = frame
-            gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-
-            
-            keypoints_orb, descriptors = orb.detectAndCompute(gray, None)
-            bwFrame_orb = cv2.drawKeypoints(gray, keypoints_orb, None, color = (0,0,255), flags = 0)
-            cv2.imshow("orb", bwFrame_orb)
-
-            if(cv2.waitKey(1) & 0xFF == ord('q')):
-                break
-
-
-
-def siftSLAM():
-    print("SIFT SLAM")
-    capture = cv2.VideoCapture(0)
-    captureStatus = capture.isOpened()
-
-    while (captureStatus==True) :
-                
-        works, frame = capture.read()
-        gray= cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-
-        sift = cv2.SIFT()
-        kp = sift.detect(gray,None)
-
-        img=cv2.drawKeypoints(gray,kp)
-        cv2.imshow("SIFT", img)
-        if(cv2.waitKey(1) & 0xFF == ord('q')):
-            break
-
-
 #Works fine
 def odometryTesting():
     drone = tello()
@@ -171,7 +102,6 @@ def odometryTesting():
     drone.startProcesses()
     while(True):
         drone.printStates()
-
 
 
 if __name__ == "__main__":
