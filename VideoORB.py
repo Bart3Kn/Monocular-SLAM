@@ -1,8 +1,7 @@
-from FrameExtractor import FrameExtractor
-import cv2 as cv
+from VideoDisplay import VideoDisplay
 
 def main():
-    capture = FrameExtractor()
+    capture = VideoDisplay()
     capture.videoCapture()
 
 if __name__ == "__main__":

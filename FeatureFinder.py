@@ -16,13 +16,20 @@ class FeatureFinder(object):
 
         return keypoints, descriptors
 
-    def featureMatcher(self, frame1Descriptors, frame2Descriptors):
+
+
+    def featureMatcher(self, frame1Keypoints, frame1Descriptors, frame2Keypoints, frame2Descriptors):
         matches = self.bfMatcher.knnMatch(frame1Descriptors, frame2Descriptors, k=2)
+
         goodMatches = []
 
         for m,n in matches:
             if m.distance < 0.75*n.distance:
-                goodMatches.append([m])
+                keypoint1 = frame1Keypoints[m.queryIdx].pt
+                keypoint2 = frame2Keypoints[m.trainIdx].pt
+
+                goodMatches.append((keypoint1, keypoint2))
+
         return  goodMatches
 
     def  cameraMatrix(self):

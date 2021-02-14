@@ -1,8 +1,8 @@
 import cv2
 import time
-import FeatureFinder
+from FeatureFinder import FeatureFinder
 
-class FrameExtractor(object):
+class VideoDisplay(object):
         def __init__(self):
             #Frame Analysis
             self.oldFrame = None
@@ -27,7 +27,7 @@ class FrameExtractor(object):
         def videoCapture(self):
 
             video = cv2.VideoCapture(r"Video Sample/London Bus Ride.mp4")
-            ff = FeatureFinder.FeatureFinder()
+            ff = FeatureFinder()
 
             if video.isOpened():
                 print("Error opening file")
@@ -55,15 +55,21 @@ class FrameExtractor(object):
                         self.newFrameKeypoints, self.newFrameDescriptors = ff.featureFinder(gray)
 
 
-                        matches = ff.featureMatcher(self.oldFrameDescriptors, self.newFrameDescriptors)
+                        matches = ff.featureMatcher(self.oldFrameKeypoints, self.oldFrameDescriptors, self.newFrameKeypoints, self.newFrameDescriptors)
                         print("Next frame done, Matches found: ", len(matches))
 
+                        for keypoint1, keypoint2 in matches:
+                            x1, y1 = map(lambda x: int(round(x)), keypoint1)
+                            x2, y2 = map(lambda x: int(round(x)), keypoint2)
+                            cv2.circle(resized, (x1,y1), color=(0,0,255), radius=2)
+                            cv2.line(resized,(x1,y1),(x2,y2), color=(255,255,0))
 
                         # Red is old frame Blue is new frame
-                        cv2.drawKeypoints(resized, self.oldFrameKeypoints, resized, color=(0, 0, 255))
-                        cv2.drawKeypoints(resized, self.newFrameKeypoints, resized, color=(255, 0, 0))
+                        # Keypoint comparison
+                        #cv2.drawKeypoints(resized, self.oldFrameKeypoints, resized, color=(0, 0, 255))
+                        #cv2.drawKeypoints(resized, self.newFrameKeypoints, resized, color=(255, 0, 0))
 
-                        cv2.putText(resized, self.fps, (7, 70), self.font, 3, (100, 255, 0), 3, cv2.LINE_AA)
+                        cv2.putText(resized, self.fps, (7, 70), self.font, 1, (100, 255, 0), 3, cv2.LINE_AA)
                         cv2.imshow("ORB", resized)
 
                         self.oldFrameKeypoints = self.newFrameKeypoints
