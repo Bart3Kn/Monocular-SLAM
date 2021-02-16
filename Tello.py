@@ -2,6 +2,7 @@ import socket
 import cv2
 import threading
 import re
+import VideoDisplay
 
 class tello(object):
     # A class containing the controller for the DJI Tello
@@ -71,7 +72,7 @@ class tello(object):
         #make them daemons to run in the background
         #video feed seems to brake when run as daemon for now
         self.stateListener.daemon = True
-        #self.videoListener.daemon = True
+
 
     def startProcesses(self):
         self.stateListener.start()
@@ -129,6 +130,8 @@ class tello(object):
             if self.capture is None:
                 self.capture = cv2.VideoCapture.open('udp://@0.0.0.0:11111')
 
+            processing = VideoDisplay.VideoDisplay(self.capture)
+
             self.captureStatus = self.capture.isOpened()
 
             output = cv2.ORB_create()
@@ -137,14 +140,7 @@ class tello(object):
 
                 recieved, frame = self.capture.read()
 
-                resized = cv2.resize(frame,(width,height))
-
-                bwFrame = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-
-                keypoints, descriptors = output.detectAndCompute(bwFrame, None)
-                bwFrame = cv2.drawKeypoints(resized,keypoints, None)
-
-                cv2.imshow("Video Feed",bwFrame)
+                processing.videoCapture()
 
                 if(cv2.waitKey(1) & 0xFF == ord('q')):
                     self.land()
@@ -152,8 +148,7 @@ class tello(object):
 
     def odometry(self):
         print("Calculating Odometry")
-        
-        #P1X = P0X + (AX + T)
+
 
     def startConnection(self):
         print("Connected to SDK")

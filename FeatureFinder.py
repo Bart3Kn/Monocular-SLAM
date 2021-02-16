@@ -1,10 +1,46 @@
 import cv2
+import numpy as np
+import Helpers
+from skimage.measure import ransac
+from skimage.transform import FundamentalMatrixTransform, EssentialMatrixTransform
 
 class FeatureFinder(object):
     def __init__(self):
         self.ORB = cv2.ORB_create()
-        self.bfMatcher = cv2.BFMatcher()
+        self.bfMatcher = cv2.BFMatcher(cv2.NORM_HAMMING)
 
+
+        self.intrinsicMatrix = None
+        self.matrixInverse = None
+
+
+    def makeMatrix(self, width, height, focal):
+        """
+        Parameters
+        ----------
+        width = frame width
+        height = frame height
+        focal = focal length of the camera
+
+        Returns
+        -------
+        generates the camera matrix and the inverse of the camera matrix for the code
+
+        """
+        self.intrinsicMatrix = np.array(([focal,0,width//2],
+                                        [0,focal,height//2],
+                                        [0,0,1]))
+        self.matrixInverse = np.linalg.inv(self.intrinsicMatrix)
+
+    def normalize(self, keypoints):
+
+        normD = Helpers.catone(keypoints)
+        keypoints = np.dot(self.intrinsicMatrix, normD).T[:, 0:2]
+        return keypoints
+
+    def denormalize(self, keypoints):
+        keypoints = np.dot(self.intrinsicMatrix, keypoints).T[:, 0:2]
+        return keypoints
 
     def featureFinder(self, frame):
         #Finds the features
@@ -23,8 +59,10 @@ class FeatureFinder(object):
 
         goodMatches = []
 
+
+        #Lowe's Ratio finder
         for m,n in matches:
-            if m.distance < 0.75*n.distance:
+            if m.distance < 0.5*n.distance:
                 keypoint1 = frame1Keypoints[m.queryIdx].pt
                 keypoint2 = frame2Keypoints[m.trainIdx].pt
 
@@ -32,8 +70,16 @@ class FeatureFinder(object):
 
         return  goodMatches
 
-    def  cameraMatrix(self):
-        print("In Progress")
+    def  cameraMatrix(self, matches):
+
+        """
+        model, inliers = ransac((ret[:,0], ret[:,1]),
+                                FundamentalMatrixTransform,
+                                min_samples= 8,
+                                residual_threshold= 1,
+                                max_trials=100)
+        """
+        return None
 
 
     def matchTextExtractor(self, matches):
