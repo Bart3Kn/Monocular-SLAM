@@ -1,6 +1,8 @@
 import cv2
 import time
 from FeatureFinder import FeatureFinder
+import numpy as np
+np.set_printoptions(suppress=True)
 import sys
 
 class VideoDisplay(object):
@@ -41,21 +43,28 @@ class VideoDisplay(object):
 
             if self.videoSource == None:
                 print("Video")
-                video = cv2.VideoCapture(r"Video Sample/London Bus Ride.mp4")
+                video = cv2.VideoCapture(r"Video Sample/Forest Drive.mp4")
             else:
                 print("Drone")
                 video = self.videoSource
 
+
+            if video.isOpened() == False:
+                print("Error opening file")
+
             ff = FeatureFinder()
+
+            """
+            VERY IMPORTANT TO GET THIS CORRECT
+            FOCAL POINT CHANGES BASED ON INPUT FEED
+            CAN BE CALCULATED USING FUNDAMENTAL MATRIX
+            """
 
             #Make Matrix
             width = video.get(3)
             height = video.get(4)
-            focalPoint = 1
+            focalPoint = 230
             ff.makeMatrix(width,height, focalPoint)
-
-            if video.isOpened() == False:
-                print("Error opening file")
 
             while(video.isOpened()):
                 ret, frame = video.read()
@@ -70,7 +79,9 @@ class VideoDisplay(object):
                     self.oldFrameTime = self.newFrameTime
                     self.fps = str(int(self.fps))
 
-
+                    """
+                    CALCULATED INITIAL FRAME SO THAT IT CAN BE USED IN FEATURE MATCHING
+                    """
                     if(self.oldFrameKeypoints == None):
                         self.oldFrameKeypoints, self.oldFrameDescriptors = ff.featureFinder(gray)
                         print("Frame 1 done")
@@ -78,16 +89,22 @@ class VideoDisplay(object):
                     else:
                         self.newFrameKeypoints, self.newFrameDescriptors = ff.featureFinder(gray)
                         matches = ff.featureMatcher(self.oldFrameKeypoints, self.oldFrameDescriptors, self.newFrameKeypoints, self.newFrameDescriptors)
-                        print("Next frame done, Matches found: ", len(matches))
 
+                        """RANSAC TO REMOVE OUTLIERS"""
+                        inliers, translation = ff.ransacFit(matches)
+
+                        print('\n',translation)
 
                         #Keypoint 1 is  new Keypoint, keypoint 2 is old
-                        for keypoint1, keypoint2 in matches:
-                            x1, y1 = map(lambda x: int(round(x)), keypoint1)
-                            x2, y2 = map(lambda x: int(round(x)), keypoint2)
+                        for keypoint1, keypoint2 in inliers:
+
+                            x1, y1 = ff.denormalise(keypoint1)
+                            x2, y2 = ff.denormalise(keypoint2)
+
                             cv2.circle(resized, (x1,y1), color=(0,0,255), radius=2)
                             #Line of translation between kp1 and kp2
                             cv2.line(resized,(x1,y1),(x2,y2), color=(255,255,0))
+
 
                         cv2.putText(resized, self.fps, (7, 70), self.font, 1, (100, 255, 0), 3, cv2.LINE_AA)
                         cv2.imshow("ORB", resized)
@@ -98,6 +115,7 @@ class VideoDisplay(object):
 
 
                         if cv2.waitKey(25) & 0xFF == ord('q'):
+                            print("\n You have closed the window: ")
                             sys.exit(1)
 
                 else:

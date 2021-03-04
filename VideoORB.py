@@ -1,56 +1,54 @@
 from VideoDisplay import VideoDisplay
 import numpy as np
-import Helpers
+np.warnings.filterwarnings('ignore')
+from Helpers import Helpers
 import time
 from Tello import tello
 
+"""RANDON MATRIX PARAMETERS FOR TESTING"""
+width = 1920
+height = 1080
+focal = 300
 
 
-def main():
-    capture = VideoDisplay()
-    capture.videoCapture()
+matrix = [[focal, 0, width//2],
+          [0,focal, height//2],
+          [0,0,1]]
 
-def normalize(keypoints):
-    focal = 1
-    width = 1920
-    height = 1080
+inverseMatrix = np.linalg.inv(matrix)
 
-    intrinsicMatrix = np.array(([focal, 0, width // 2],
-                                [0, focal, height // 2],
-                                [0, 0, 1]))
-
-    matrixInverse = np.linalg.inv(intrinsicMatrix)
-    return np.dot(matrixInverse, Helpers.Helpers.catone(keypoints).T).T[:, 0:2]
-
-
-def denormalize(keypoints):
-
-    focal = 1
-    width = 1920
-    height = 1080
-
-
-    intrinsicMatrix = np.array(([focal, 0, width // 2],
-                                [0, focal, height // 2],
-                                [0, 0, 1]))
-
-    ret = np.dot(intrinsicMatrix, np.array([keypoints[0], keypoints[1], 1.0]))
-    return ret
-
+"""-------------------------------------"""
 def testing():
-
     point = [[1, 2],
              [3, 4],
              [5, 6]]
 
     point = np.array(point)
+    print("Point")
+    print(point)
+
+    print("normalised")
+    norm = normalise(point)
+    print(norm)
+
+    print("denorm")
+    denorm = denormalise(norm)
+    print(denorm)
 
 
-    output = normalize(point)
-    print(output)
+def normalise(points):
+    """Normalises using inverse camera matrix and then returns the data points """
+    append1 = Helpers.catone(points)
+    output = np.dot(inverseMatrix, append1.T)
+    output = output.T[:, 0:2]
+    return output
 
-    output2 = denormalize(output)
-    print(output2)
+def denormalise(points):
+    """Denomarlise points for use in porjection on display"""
+    append1 = Helpers.catone(points)
+    output = np.dot(matrix, append1.T)
+    output = output.T[:,0:2]
+    return output
 
 def droneTesting():
 
@@ -62,10 +60,8 @@ def droneTesting():
     time.sleep(2)
     drone.startProcesses()
 
-def slamTestsing():
+def slamTesting():
     processing = VideoDisplay().videoCapture()
 
-
-
 if __name__ == "__main__":
-    slamTestsing()
+    slamTesting()
