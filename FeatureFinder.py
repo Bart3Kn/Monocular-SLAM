@@ -55,7 +55,7 @@ class FeatureFinder(object):
 
     def featureFinder(self, frame):
         # Finds the features
-        features = cv2.goodFeaturesToTrack(frame, 2000, qualityLevel=0.01, minDistance=10)
+        features = cv2.goodFeaturesToTrack(frame, 500, qualityLevel=0.01, minDistance=10)
 
         # extracts keypoints
         keypoints = [cv2.KeyPoint(x=feature[0][0], y=feature[0][1], _size=20) for feature in features]
@@ -108,7 +108,7 @@ class FeatureFinder(object):
                                #FundamentalMatrixTransform,
                                EssentialMatrixTransform,
                                min_samples=8,
-                               residual_threshold=0.001,
+                               residual_threshold=0.01,
                                max_trials=100)
 
         matches = matches[inlier]
@@ -125,6 +125,7 @@ class FeatureFinder(object):
         self.focalEstimate.append(f_est)
         print(np.median(self.focalEstimate))
         """
+
 
         transformation = self.extractTransformation(model.params)
 

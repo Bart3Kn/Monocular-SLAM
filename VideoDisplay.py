@@ -50,7 +50,7 @@ class VideoDisplay(object):
     def videoCapture(self):
         if self.videoSource is None:
             print("Video")
-            video = cv2.VideoCapture(r"Video Sample/Forest Drive.mp4")
+            video = cv2.VideoCapture(r"Video Sample/output.mp4")
         else:
             print("Drone")
             video = self.videoSource
@@ -70,8 +70,9 @@ class VideoDisplay(object):
         width = video.get(3)
         height = video.get(4)
         # for LondonBusRide
-        # focalPoint = 205
-
+        #focalPoint = 205
+        #for Forest Drive
+        #focalPoint = 350
         focalPoint = 350
         ff.makeMatrix(width, height, focalPoint)
 
@@ -92,12 +93,12 @@ class VideoDisplay(object):
                 self.fps = str(int(self.fps))
 
                 """
-                    CALCULATED INITIAL FRAME SO THAT IT CAN BE USED IN FEATURE MATCHING
-                    """
+                CREATES INITIAL FRAME SO THAT IT CAN BE USED IN FEATURE MATCHING
+                """
                 if self.oldFrameKeypoints is None:
                     self.oldFrameKeypoints, self.oldFrameDescriptors = ff.featureFinder(gray)
                     pose1 = np.eye(4)
-                    frame1 = FrameObject(pose1, self.oldFrameKeypoints, self.oldFrameDescriptors, None, None, None)
+                    frame1 = FrameObject(pose1, self.oldFrameKeypoints, self.oldFrameDescriptors, None, None)
                     self.oldFrame = frame1
                     self.framesArray.append(frame1)
                     print("Frame 1 done")
@@ -127,13 +128,23 @@ class VideoDisplay(object):
 
                     nextPose = ff.translationAdjustment(self.framesArray[-1].pose, translation)
 
+                    pts4d = cv2.triangulatePoints(self.oldFrame.pose[:3], nextPose[:3], inliers[:, 0].T,
+                                                  inliers[:, 1].T)
+
+                    #pts4d = (np.abs(pts4d[:, 3]) > 0.005)
+                    pts4d /= pts4d[3]
+
+
+                    pts3d = pts4d.T
+
+
                     nextFrame = FrameObject(nextPose, self.newFrameKeypoints, self.newFrameDescriptors, queryIdx,
-                                            trainIdx, inliers)
+                                            trainIdx, inliers, pts3d)
+
                     self.framesArray.append(nextFrame)
 
-                    pts4d = cv2.triangulatePoints(self.oldFrame.pose[:3], nextFrame.pose[:3], inliers[:, 0].T, inliers[:, 1].T)
-                    pts4d /= pts4d[3]
-                    good_pts4d = (np.abs(pts4d[:, 3]) > 0.005) & (pts4d[:, 2] > 0)
+
+
 
                     # Keypoint 1 is  new Keypoint, keypoint 2 is old
                     for keypoint1, keypoint2 in inliers:
