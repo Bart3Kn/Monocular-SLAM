@@ -133,7 +133,7 @@ class FeatureFinder(object):
 
     def translationAdjustment(self, oldFramePose, newFramePose):
         """
-        Gets old camera position, adds the the
+        Gets old camera position, adds the the translation to create next postion
         """
         base = np.eye(4)
         base[:3,:4] = newFramePose
